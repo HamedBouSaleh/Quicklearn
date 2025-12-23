@@ -13,15 +13,19 @@ class Course extends Model
 
     protected $fillable = [
         'title',
+        'description',
         'short_description',
         'long_description',
         'category',
         'difficulty',
+        'duration',
         'thumbnail_url',
         'estimated_duration',
+        'instructor_id',
         'created_by',
         'is_published',
-        'enrollment_count'
+        'enrollment_count',
+        'instructor_bio'
     ];
 
     protected $casts = [
@@ -31,6 +35,11 @@ class Course extends Model
     ];
 
     // Relationships
+    public function instructor()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');

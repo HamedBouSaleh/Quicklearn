@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('verification_code')->unique();
             $table->timestamp('generated_at')->useCurrent();
             $table->string('instructor_name')->nullable();
+            $table->timestamps();
             
             $table->unique(['user_id', 'course_id'], 'unique_user_course_certificate');
             $table->index('user_id', 'idx_user_id');

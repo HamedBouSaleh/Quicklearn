@@ -20,6 +20,27 @@ class RouteServiceProvider extends ServiceProvider
     public const HOME = '/dashboard';
 
     /**
+     * Get the redirect path based on user role after authentication
+     */
+    public static function redirectTo(): string
+    {
+        $user = auth()->user();
+        
+        if (!$user) {
+            return static::HOME;
+        }
+        
+        $role = strtolower($user->role);
+        
+        return match($role) {
+            'admin' => '/admin/dashboard',
+            'instructor' => '/instructor/dashboard',
+            'student' => '/student/dashboard',
+            default => static::HOME,
+        };
+    }
+
+    /**
      * Define your route model bindings, pattern filters, and other route configuration.
      */
     public function boot(): void

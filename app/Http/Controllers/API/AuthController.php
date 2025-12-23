@@ -22,7 +22,7 @@ class AuthController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:8|confirmed', // requires password_confirmation field
-            'role' => 'required|in:Student,Instructor,Admin'
+            'role' => 'required|in:Student,Instructor'
         ]);
 
         // Create user (password auto-hashed by Laravel)
