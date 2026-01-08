@@ -95,20 +95,29 @@ class DashboardController extends Controller
             });
 
         return Inertia::render('Student/Dashboard', [
-            'stats' => [
-                'enrolled_courses' => $enrolledCount,
-                'completed_courses' => $completedCount,
-                'total_hours' => $totalHours,
-                'certificates' => $certificatesCount,
-                'overall_progress' => $overallProgress,
-                'completed_lessons' => $completedLessons,
-                'total_lessons' => $totalLessons,
-                'quiz_average' => $quizAverage,
-                'learning_streak' => $learningStreak
-            ],
-            'continueLesson' => $continueLesson,
-            'enrolledCourses' => $enrolledCourses,
-            'recentCertificates' => $recentCertificates
+            'enrolledCourses' => $enrolledCount,
+            'completedCourses' => $completedCount,
+            'hoursLearned' => $totalHours,
+            'avgProgress' => $overallProgress . '%',
+            'recentCourses' => $enrolledCourses->slice(0, 3)->map(function($course) {
+                return [
+                    'id' => $course['id'],
+                    'title' => $course['title'],
+                    'instructor' => 'Your Instructor',
+                    'progress' => $course['progress']
+                ];
+            }),
+            'recommendedCourses' => Course::where('is_published', true)
+                ->limit(3)
+                ->get()
+                ->map(function($course) {
+                    return [
+                        'id' => $course->id,
+                        'title' => $course->title,
+                        'instructor' => $course->created_by ? \App\Models\User::find($course->created_by)->name : 'Expert Instructor',
+                        'lessons' => $course->lessons_count ?? 0
+                    ];
+                })
         ]);
     }
 }

@@ -23,9 +23,9 @@ return new class extends Migration
             $table->timestamp('completed_at')->nullable();
             $table->integer('attempt_number');
             
-            $table->index('quiz_id', 'idx_quiz_id');
-            $table->index('user_id', 'idx_user_id');
-            $table->index('attempt_date', 'idx_attempt_date');
+            $table->index('quiz_id', 'idx_quiz_attempt_quiz_id');
+            $table->index('user_id', 'idx_quiz_attempt_user_id');
+            $table->index('attempt_date', 'idx_quiz_attempt_date');
         });
     }
 

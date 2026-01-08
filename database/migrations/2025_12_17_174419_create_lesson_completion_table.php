@@ -19,8 +19,8 @@ return new class extends Migration
             $table->integer('time_spent_seconds')->default(0);
             
             $table->unique(['user_id', 'lesson_id'], 'unique_user_lesson');
-            $table->index('lesson_id', 'idx_lesson_id');
-            $table->index('user_id', 'idx_user_id');
+            $table->index('lesson_id', 'idx_completion_lesson_id');
+            $table->index('user_id', 'idx_completion_user_id');
         });
     }
 

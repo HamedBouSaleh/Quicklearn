@@ -22,9 +22,9 @@ return new class extends Migration
             $table->timestamps();
             
             $table->unique(['user_id', 'course_id'], 'unique_user_course_certificate');
-            $table->index('user_id', 'idx_user_id');
-            $table->index('course_id', 'idx_course_id');
-            $table->index('verification_code', 'idx_verification_code');
+            $table->index('user_id', 'idx_certificate_user_id');
+            $table->index('course_id', 'idx_certificate_course_id');
+            $table->index('verification_code', 'idx_certificate_verification_code');
         });
     }
 

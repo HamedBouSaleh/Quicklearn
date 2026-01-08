@@ -1,6 +1,6 @@
 <script setup>
 import { Head, useForm, router } from '@inertiajs/vue3';
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import InstructorLayout from '@/Layouts/InstructorLayout.vue';
 import InputError from '@/Components/InputError.vue';
 import { ref } from 'vue';
 
@@ -51,20 +51,14 @@ const submitForm = () => {
 <template>
     <Head title="Add Lesson" />
 
-    <AuthenticatedLayout>
-        <template #header>
-            <div class="flex items-center justify-between">
-                <h2 class="text-xl font-semibold leading-tight text-gray-800">
-                    Add Lesson to {{ course.title }}
-                </h2>
+    <InstructorLayout>
+        <div class="max-w-4xl">
+            <div class="mb-8">
+                <h1 class="text-3xl font-bold text-gray-900">Add Lesson to {{ course.title }}</h1>
             </div>
-        </template>
 
-        <div class="py-12">
-            <div class="mx-auto max-w-4xl sm:px-6 lg:px-8">
-                <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
-                    <div class="p-6">
-                        <form @submit.prevent="submitForm" class="space-y-6">
+            <div class="bg-white rounded-xl shadow-sm p-8">
+                <form @submit.prevent="submitForm" class="space-y-6">
                             <!-- Title -->
                             <div>
                                 <label for="title" class="block text-sm font-medium text-gray-700">
@@ -233,9 +227,7 @@ const submitForm = () => {
                                 </button>
                             </div>
                         </form>
-                    </div>
-                </div>
             </div>
         </div>
-    </AuthenticatedLayout>
+    </InstructorLayout>
 </template>

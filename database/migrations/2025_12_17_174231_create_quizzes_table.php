@@ -26,8 +26,8 @@ return new class extends Migration
             $table->timestamp('created_at')->useCurrent();
             $table->timestamp('updated_at')->useCurrent()->useCurrentOnUpdate();
             
-            $table->index('course_id', 'idx_course_id');
-            $table->index('lesson_id', 'idx_lesson_id');
+            $table->index('course_id', 'idx_quiz_course_id');
+            $table->index('lesson_id', 'idx_quiz_lesson_id');
         });
     }
 

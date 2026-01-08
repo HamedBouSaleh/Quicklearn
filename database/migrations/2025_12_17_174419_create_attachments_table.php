@@ -20,8 +20,8 @@ return new class extends Migration
             $table->integer('file_size_kb')->nullable();
             $table->timestamp('uploaded_at')->useCurrent();
             
-            $table->index('lesson_id', 'idx_lesson_id');
-            $table->index('file_type', 'idx_file_type');
+            $table->index('lesson_id', 'idx_attachment_lesson_id');
+            $table->index('file_type', 'idx_attachment_file_type');
         });
     }
 

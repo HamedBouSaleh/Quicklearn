@@ -18,7 +18,7 @@ return new class extends Migration
             $table->boolean('is_correct')->default(false);
             $table->integer('order_position');
             
-            $table->index('question_id', 'idx_question_id');
+            $table->index('question_id', 'idx_answer_question_id');
         });
     }
 

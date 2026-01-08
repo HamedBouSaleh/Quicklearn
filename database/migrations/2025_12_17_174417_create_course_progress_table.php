@@ -23,8 +23,8 @@ return new class extends Migration
             $table->timestamp('last_updated')->useCurrent()->useCurrentOnUpdate();
             
             $table->unique(['user_id', 'course_id'], 'unique_user_course');
-            $table->index('course_id', 'idx_course_id');
-            $table->index('user_id', 'idx_user_id');
+            $table->index('course_id', 'idx_progress_course_id');
+            $table->index('user_id', 'idx_progress_user_id');
             $table->index('progress_percentage', 'idx_progress_percentage');
         });
     }

@@ -20,8 +20,8 @@ return new class extends Migration
             $table->integer('points')->default(1);
             $table->timestamp('created_at')->useCurrent();
             
-            $table->index('quiz_id', 'idx_quiz_id');
-            $table->index('order_position', 'idx_order_position');
+            $table->index('quiz_id', 'idx_question_quiz_id');
+            $table->index('order_position', 'idx_question_order_position');
         });
     }
 

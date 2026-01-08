@@ -11,6 +11,7 @@ use App\Http\Controllers\Student\DashboardController as StudentDashboardControll
 use App\Http\Controllers\Student\CourseController as StudentCourseController;
 use App\Http\Controllers\Student\LessonController as StudentLessonController;
 use App\Http\Controllers\Student\QuizController as StudentQuizController;
+use App\Http\Controllers\Student\CertificateController as StudentCertificateController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -192,7 +193,8 @@ Route::middleware(['auth', 'verified', 'role:instructor,admin'])->prefix('instru
 // Student Routes - Only accessible by Student and Admin
 Route::middleware(['auth', 'verified', 'role:student,admin'])->prefix('student')->name('student.')->group(function () {
     // Course Browsing & Enrollment
-    Route::get('/courses', [StudentCourseController::class, 'browse'])->name('courses.browse');
+    Route::get('/courses', [StudentCourseController::class, 'index'])->name('courses.index');
+    Route::get('/courses/browse', [StudentCourseController::class, 'browse'])->name('courses.browse');
     Route::get('/courses/{id}', [StudentCourseController::class, 'show'])->name('courses.show');
     Route::post('/courses/{id}/enroll', [StudentCourseController::class, 'enroll'])->name('courses.enroll');
     
@@ -207,28 +209,9 @@ Route::middleware(['auth', 'verified', 'role:student,admin'])->prefix('student')
     Route::get('/quiz-attempts/{attemptId}/results', [StudentQuizController::class, 'results'])->name('quizzes.results');
     
     // Certificates
-    Route::get('/certificates', function () {
-        return Inertia::render('Student/Certificates/Index', [
-            'certificates' => []
-        ]);
-    })->name('certificates.index');
-    
-    Route::get('/certificates/{id}', function ($id) {
-        return Inertia::render('Certificates/Show', [
-            'certificate' => [
-                'id' => $id,
-                'student_name' => auth()->user()->name ?? 'Student Name',
-                'course_title' => 'Web Development Fundamentals',
-                'issued_date' => 'December 20, 2025',
-                'certificate_id' => 'CERT-' . strtoupper(substr(md5($id), 0, 8)),
-                'final_score' => 92,
-                'instructor_name' => 'John Doe',
-                'lessons_completed' => 15,
-                'quizzes_passed' => 5,
-                'hours_spent' => 12
-            ]
-        ]);
-    })->name('certificates.show');
+    Route::get('/certificates', [StudentCertificateController::class, 'index'])->name('certificates.index');
+    Route::get('/certificates/{id}', [StudentCertificateController::class, 'show'])->name('certificates.show');
+    Route::get('/certificates/{id}/download', [StudentCertificateController::class, 'download'])->name('certificates.download');
 });
 
 require __DIR__.'/auth.php';

@@ -63,6 +63,7 @@ class LessonController extends Controller
         // Create quiz if requested
         if ($request->boolean('has_quiz')) {
             $lesson->quizzes()->create([
+                'course_id' => $course->id,
                 'title' => $validated['title'] . ' Quiz',
                 'description' => 'Quiz for ' . $validated['title'],
                 'time_limit' => 600, // 10 minutes default

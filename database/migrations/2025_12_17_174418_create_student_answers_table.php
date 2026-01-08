@@ -19,8 +19,8 @@ return new class extends Migration
             $table->text('short_answer_text')->nullable();
             $table->boolean('is_correct')->default(false);
             
-            $table->index('quiz_attempt_id', 'idx_quiz_attempt_id');
-            $table->index('question_id', 'idx_question_id');
+            $table->index('quiz_attempt_id', 'idx_student_answer_quiz_attempt_id');
+            $table->index('question_id', 'idx_student_answer_question_id');
         });
     }
 
