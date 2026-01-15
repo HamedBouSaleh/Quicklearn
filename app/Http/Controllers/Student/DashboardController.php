@@ -23,7 +23,19 @@ class DashboardController extends Controller
 
         // Calculate stats
         $enrolledCount = $enrollments->count();
-        $completedCount = $enrollments->where('progress_percentage', 100)->count();
+        // Count completed courses (all lessons done)
+        $completedCount = 0;
+        foreach ($enrollments as $enrollment) {
+            $totalLessons = \App\Models\Lesson::where('course_id', $enrollment->course_id)->count();
+            if ($totalLessons > 0) {
+                $completedLessons = \App\Models\LessonCompletion::whereIn('lesson_id', function($query) use ($enrollment) {
+                    $query->select('id')->from('lessons')->where('course_id', $enrollment->course_id);
+                })->where('user_id', $enrollment->user_id)->count();
+                if ($completedLessons === $totalLessons) {
+                    $completedCount++;
+                }
+            }
+        }
         $certificatesCount = Certificate::where('user_id', $userId)->count();
 
         // Calculate total hours from completed lessons
@@ -44,7 +56,18 @@ class DashboardController extends Controller
         // Get continue lesson (last incomplete lesson from enrolled courses)
         $continueLesson = null;
         foreach ($enrollments as $enrollment) {
-            if ($enrollment->progress_percentage < 100) {
+            // Calculate real-time progress
+            $totalLessons = \App\Models\Lesson::where('course_id', $enrollment->course_id)->count();
+            $completedLessons = 0;
+            $courseProgress = 0;
+            if ($totalLessons > 0) {
+                $completedLessons = \App\Models\LessonCompletion::whereIn('lesson_id', function($query) use ($enrollment) {
+                    $query->select('id')->from('lessons')->where('course_id', $enrollment->course_id);
+                })->where('user_id', $userId)->count();
+                $courseProgress = round(($completedLessons / $totalLessons) * 100);
+            }
+            
+            if ($courseProgress < 100) {
                 $course = Course::find($enrollment->course_id);
                 $lessons = $course->lessons;
                 
@@ -59,7 +82,7 @@ class DashboardController extends Controller
                             'course_id' => $course->id,
                             'course_title' => $course->title,
                             'lesson_title' => $lesson->title,
-                            'progress' => $enrollment->progress_percentage
+                            'progress' => $courseProgress
                         ];
                         break 2;
                     }
@@ -70,27 +93,38 @@ class DashboardController extends Controller
         // Get enrolled courses
         $enrolledCourses = Course::whereIn('id', $enrolledCourseIds)
             ->get()
-            ->map(function($course) use ($enrollments) {
+            ->map(function($course) use ($enrollments, $userId) {
                 $enrollment = $enrollments->firstWhere('course_id', $course->id);
+                // Calculate real-time progress
+                $progress = 0;
+                if ($enrollment) {
+                    $totalLessons = \App\Models\Lesson::where('course_id', $course->id)->count();
+                    if ($totalLessons > 0) {
+                        $completedLessons = \App\Models\LessonCompletion::whereIn('lesson_id', function($query) use ($course) {
+                            $query->select('id')->from('lessons')->where('course_id', $course->id);
+                        })->where('user_id', $userId)->count();
+                        $progress = round(($completedLessons / $totalLessons) * 100);
+                    }
+                }
                 return [
                     'id' => $course->id,
                     'title' => $course->title,
                     'thumbnail_url' => $course->thumbnail_url,
-                    'progress' => $enrollment ? $enrollment->progress_percentage : 0
+                    'progress' => $progress
                 ];
             });
 
         // Get recent certificates
         $recentCertificates = Certificate::where('user_id', $userId)
             ->with('course')
-            ->latest()
+            ->latest('generated_at')
             ->take(3)
             ->get()
             ->map(function($cert) {
                 return [
                     'id' => $cert->id,
                     'course_title' => $cert->course->title,
-                    'issued_date' => $cert->created_at->format('M d, Y')
+                    'issued_date' => $cert->generated_at->format('M d, Y')
                 ];
             });
 
@@ -108,6 +142,7 @@ class DashboardController extends Controller
                 ];
             }),
             'recommendedCourses' => Course::where('is_published', true)
+                ->whereNotIn('id', $enrolledCourseIds)
                 ->limit(3)
                 ->get()
                 ->map(function($course) {

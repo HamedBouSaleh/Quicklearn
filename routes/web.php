@@ -181,6 +181,7 @@ Route::middleware(['auth', 'verified', 'role:instructor,admin'])->prefix('instru
     Route::delete('/lessons/{id}', [InstructorLessonController::class, 'destroy'])->name('lessons.destroy');
     
     // Quiz Management
+    Route::get('/lessons/{lessonId}/quizzes', [InstructorQuizController::class, 'index'])->name('quizzes.index');
     Route::get('/lessons/{lessonId}/quizzes/create', [InstructorQuizController::class, 'create'])->name('quizzes.create');
     Route::post('/lessons/{lessonId}/quizzes', [InstructorQuizController::class, 'store'])->name('quizzes.store');
     Route::get('/quizzes/{id}', [InstructorQuizController::class, 'show'])->name('quizzes.show');

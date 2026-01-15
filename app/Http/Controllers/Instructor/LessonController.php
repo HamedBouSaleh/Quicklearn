@@ -87,12 +87,11 @@ class LessonController extends Controller
                 'id' => $lesson->id,
                 'course_id' => $lesson->course_id,
                 'title' => $lesson->title,
-                'description' => $lesson->description,
                 'content' => $lesson->content,
-                'type' => $lesson->type,
+                'lesson_type' => $lesson->lesson_type,
                 'video_url' => $lesson->video_url,
-                'duration' => $lesson->duration,
-                'order_index' => $lesson->order_index
+                'estimated_duration' => $lesson->estimated_duration,
+                'order_position' => $lesson->order_position
             ]
         ]);
     }
@@ -105,12 +104,11 @@ class LessonController extends Controller
 
         $validated = $request->validate([
             'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
             'content' => 'nullable|string',
-            'type' => 'required|in:video,text,document',
             'video_url' => 'nullable|url',
-            'duration' => 'nullable|string',
-            'order_index' => 'nullable|integer'
+            'lesson_type' => 'required|in:Video,Article,Mixed',
+            'estimated_duration' => 'nullable|integer|min:1',
+            'order_position' => 'nullable|integer'
         ]);
 
         $lesson->update($validated);

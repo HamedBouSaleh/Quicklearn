@@ -13,10 +13,39 @@ use Inertia\Inertia;
 
 class QuizController extends Controller
 {
+    public function index($lessonId)
+    {
+        $lesson = Lesson::with(['course', 'quizzes.questions', 'quizzes.attempts'])
+            ->whereHas('course', function($query) {
+                $query->where('created_by', auth()->id());
+            })->findOrFail($lessonId);
+
+        return Inertia::render('Instructor/Quizzes/Index', [
+            'lesson' => [
+                'id' => $lesson->id,
+                'title' => $lesson->title,
+                'course_id' => $lesson->course_id,
+                'course_title' => $lesson->course->title
+            ],
+            'quizzes' => $lesson->quizzes->map(function($quiz) {
+                return [
+                    'id' => $quiz->id,
+                    'title' => $quiz->title,
+                    'description' => $quiz->description,
+                    'time_limit' => $quiz->time_limit,
+                    'passing_score' => $quiz->passing_score,
+                    'questions_count' => $quiz->questions->count(),
+                    'attempts_count' => $quiz->attempts->count(),
+                    'created_at' => $quiz->created_at ? $quiz->created_at->format('M d, Y') : null
+                ];
+            })
+        ]);
+    }
+
     public function create($lessonId)
     {
         $lesson = Lesson::whereHas('course', function($query) {
-            $query->where('instructor_id', auth()->id());
+            $query->where('created_by', auth()->id());
         })->findOrFail($lessonId);
 
         return Inertia::render('Instructor/Quizzes/Create', [
@@ -31,7 +60,7 @@ class QuizController extends Controller
     public function store(Request $request, $lessonId)
     {
         $lesson = Lesson::whereHas('course', function($query) {
-            $query->where('instructor_id', auth()->id());
+            $query->where('created_by', auth()->id());
         })->findOrFail($lessonId);
 
         $validated = $request->validate([
@@ -39,6 +68,8 @@ class QuizController extends Controller
             'description' => 'nullable|string',
             'time_limit' => 'nullable|integer',
             'passing_score' => 'required|integer|min:0|max:100',
+            'allow_retake' => 'boolean',
+            'max_attempts' => 'nullable|integer|min:1',
             'questions' => 'required|array|min:1',
             'questions.*.question_text' => 'required|string',
             'questions.*.question_type' => 'required|in:multiple_choice,true_false,short_answer',
@@ -49,23 +80,35 @@ class QuizController extends Controller
         ]);
 
         $quiz = $lesson->quizzes()->create([
+            'course_id' => $lesson->course_id,
             'title' => $validated['title'],
             'description' => $validated['description'] ?? null,
             'time_limit' => $validated['time_limit'],
-            'passing_score' => $validated['passing_score']
+            'passing_score' => $validated['passing_score'],
+            'allow_retake' => $request->boolean('allow_retake', true),
+            'max_attempts' => $validated['max_attempts'] ?? null
         ]);
 
-        foreach ($validated['questions'] as $questionData) {
+        // Map question types from frontend to database enum
+        $questionTypeMap = [
+            'multiple_choice' => 'MCQ',
+            'true_false' => 'TrueFalse',
+            'short_answer' => 'ShortAnswer'
+        ];
+
+        foreach ($validated['questions'] as $index => $questionData) {
             $question = $quiz->questions()->create([
                 'question_text' => $questionData['question_text'],
-                'question_type' => $questionData['question_type'],
-                'points' => $questionData['points']
+                'question_type' => $questionTypeMap[$questionData['question_type']] ?? 'MCQ',
+                'points' => $questionData['points'],
+                'order_position' => $index + 1
             ]);
 
-            foreach ($questionData['answers'] as $answerData) {
+            foreach ($questionData['answers'] as $answerIndex => $answerData) {
                 $question->answers()->create([
                     'answer_text' => $answerData['answer_text'],
-                    'is_correct' => $answerData['is_correct']
+                    'is_correct' => $answerData['is_correct'],
+                    'order_position' => $answerIndex + 1
                 ]);
             }
         }
@@ -78,7 +121,7 @@ class QuizController extends Controller
     {
         $quiz = Quiz::with(['questions.answers', 'lesson.course'])
             ->whereHas('lesson.course', function($query) {
-                $query->where('instructor_id', auth()->id());
+                $query->where('created_by', auth()->id());
             })->findOrFail($id);
 
         return Inertia::render('Instructor/Quizzes/Edit', [
@@ -90,6 +133,8 @@ class QuizController extends Controller
                 'description' => $quiz->description,
                 'time_limit' => $quiz->time_limit,
                 'passing_score' => $quiz->passing_score,
+                'allow_retake' => $quiz->allow_retake,
+                'max_attempts' => $quiz->max_attempts,
                 'questions' => $quiz->questions->map(function($question) {
                     return [
                         'id' => $question->id,
@@ -112,7 +157,7 @@ class QuizController extends Controller
     public function update(Request $request, $id)
     {
         $quiz = Quiz::whereHas('lesson.course', function($query) {
-            $query->where('instructor_id', auth()->id());
+            $query->where('created_by', auth()->id());
         })->findOrFail($id);
 
         $validated = $request->validate([
@@ -120,9 +165,108 @@ class QuizController extends Controller
             'description' => 'nullable|string',
             'time_limit' => 'nullable|integer',
             'passing_score' => 'required|integer|min:0|max:100',
+            'allow_retake' => 'boolean',
+            'max_attempts' => 'nullable|integer|min:1',
+            'questions' => 'required|array|min:1',
+            'questions.*.id' => 'nullable|integer',
+            'questions.*.question_text' => 'required|string',
+            'questions.*.question_type' => 'required|in:multiple_choice,true_false,short_answer',
+            'questions.*.points' => 'required|integer|min:1',
+            'questions.*.answers' => 'required|array|min:1',
+            'questions.*.answers.*.id' => 'nullable|integer',
+            'questions.*.answers.*.answer_text' => 'required|string',
+            'questions.*.answers.*.is_correct' => 'required|boolean',
         ]);
 
-        $quiz->update($validated);
+        // Update quiz basic info
+        $quiz->update([
+            'title' => $validated['title'],
+            'description' => $validated['description'] ?? null,
+            'time_limit' => $validated['time_limit'],
+            'passing_score' => $validated['passing_score'],
+            'allow_retake' => $request->boolean('allow_retake', true),
+            'max_attempts' => $validated['max_attempts'] ?? null
+        ]);
+
+        // Map question types from frontend to database enum
+        $questionTypeMap = [
+            'multiple_choice' => 'MCQ',
+            'true_false' => 'TrueFalse',
+            'short_answer' => 'ShortAnswer'
+        ];
+
+        // Track existing question IDs to know which ones to keep
+        $submittedQuestionIds = collect($validated['questions'])
+            ->pluck('id')
+            ->filter()
+            ->toArray();
+
+        // Delete questions that were removed
+        $quiz->questions()->whereNotIn('id', $submittedQuestionIds)->delete();
+
+        // Update or create questions
+        foreach ($validated['questions'] as $index => $questionData) {
+            if (isset($questionData['id'])) {
+                // Update existing question
+                $question = $quiz->questions()->find($questionData['id']);
+                if ($question) {
+                    $question->update([
+                        'question_text' => $questionData['question_text'],
+                        'question_type' => $questionTypeMap[$questionData['question_type']] ?? 'MCQ',
+                        'points' => $questionData['points'],
+                        'order_position' => $index + 1
+                    ]);
+
+                    // Track existing answer IDs
+                    $submittedAnswerIds = collect($questionData['answers'])
+                        ->pluck('id')
+                        ->filter()
+                        ->toArray();
+
+                    // Delete answers that were removed
+                    $question->answers()->whereNotIn('id', $submittedAnswerIds)->delete();
+
+                    // Update or create answers
+                    foreach ($questionData['answers'] as $answerIndex => $answerData) {
+                        if (isset($answerData['id'])) {
+                            // Update existing answer
+                            $answer = $question->answers()->find($answerData['id']);
+                            if ($answer) {
+                                $answer->update([
+                                    'answer_text' => $answerData['answer_text'],
+                                    'is_correct' => $answerData['is_correct'],
+                                    'order_position' => $answerIndex + 1
+                                ]);
+                            }
+                        } else {
+                            // Create new answer
+                            $question->answers()->create([
+                                'answer_text' => $answerData['answer_text'],
+                                'is_correct' => $answerData['is_correct'],
+                                'order_position' => $answerIndex + 1
+                            ]);
+                        }
+                    }
+                }
+            } else {
+                // Create new question
+                $question = $quiz->questions()->create([
+                    'question_text' => $questionData['question_text'],
+                    'question_type' => $questionTypeMap[$questionData['question_type']] ?? 'MCQ',
+                    'points' => $questionData['points'],
+                    'order_position' => $index + 1
+                ]);
+
+                // Create answers for new question
+                foreach ($questionData['answers'] as $answerIndex => $answerData) {
+                    $question->answers()->create([
+                        'answer_text' => $answerData['answer_text'],
+                        'is_correct' => $answerData['is_correct'],
+                        'order_position' => $answerIndex + 1
+                    ]);
+                }
+            }
+        }
 
         return redirect()->route('instructor.quizzes.show', $id)
             ->with('success', 'Quiz updated successfully!');
@@ -132,7 +276,7 @@ class QuizController extends Controller
     {
         $quiz = Quiz::with(['questions.answers', 'lesson.course', 'attempts.user'])
             ->whereHas('lesson.course', function($query) {
-                $query->where('instructor_id', auth()->id());
+                $query->where('created_by', auth()->id());
             })->findOrFail($id);
 
         return Inertia::render('Instructor/Quizzes/Show', [
@@ -147,15 +291,15 @@ class QuizController extends Controller
                 'questions_count' => $quiz->questions->count(),
                 'attempts_count' => $quiz->attempts->count()
             ],
-            'attempts' => $quiz->attempts->map(function($attempt) {
+            'attempts' => $quiz->attempts->map(function($attempt) use ($quiz) {
                 return [
                     'id' => $attempt->id,
                     'student_name' => $attempt->user->name,
                     'student_email' => $attempt->user->email,
-                    'score' => $attempt->score,
-                    'passed' => $attempt->passed,
-                    'submitted_at' => $attempt->submitted_at ? $attempt->submitted_at->format('M d, Y H:i') : null,
-                    'time_taken' => $attempt->time_taken
+                    'score' => round($attempt->percentage, 1),
+                    'passed' => $attempt->percentage >= $quiz->passing_score,
+                    'submitted_at' => $attempt->completed_at ? $attempt->completed_at->format('M d, Y H:i') : null,
+                    'time_taken' => $attempt->time_spent_seconds ? round($attempt->time_spent_seconds / 60) : null
                 ];
             })
         ]);
@@ -164,7 +308,7 @@ class QuizController extends Controller
     public function destroy($id)
     {
         $quiz = Quiz::whereHas('lesson.course', function($query) {
-            $query->where('instructor_id', auth()->id());
+            $query->where('created_by', auth()->id());
         })->findOrFail($id);
 
         $courseId = $quiz->lesson->course_id;
@@ -178,17 +322,18 @@ class QuizController extends Controller
     {
         $attempt = QuizAttempt::with(['quiz.questions.answers', 'studentAnswers', 'user'])
             ->whereHas('quiz.lesson.course', function($query) {
-                $query->where('instructor_id', auth()->id());
+                $query->where('created_by', auth()->id());
             })->findOrFail($attemptId);
 
         return Inertia::render('Instructor/Quizzes/GradeAttempt', [
             'attempt' => [
                 'id' => $attempt->id,
                 'student_name' => $attempt->user->name,
+                'quiz_id' => $attempt->quiz_id,
                 'quiz_title' => $attempt->quiz->title,
-                'score' => $attempt->score,
-                'passed' => $attempt->passed,
-                'submitted_at' => $attempt->submitted_at ? $attempt->submitted_at->format('M d, Y H:i') : null
+                'score' => round($attempt->percentage, 1),
+                'passed' => $attempt->percentage >= $attempt->quiz->passing_score,
+                'submitted_at' => $attempt->completed_at ? $attempt->completed_at->format('M d, Y H:i') : null
             ],
             'questions' => $attempt->quiz->questions->map(function($question) use ($attempt) {
                 $studentAnswer = $attempt->studentAnswers->where('question_id', $question->id)->first();

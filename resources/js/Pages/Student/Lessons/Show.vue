@@ -146,7 +146,7 @@
                     </div>
 
                     <!-- Video Content -->
-                    <div v-if="lesson.lesson_type === 'Video' && lesson.video_url" class="mb-6 bg-white rounded-lg shadow-sm overflow-hidden">
+                    <div v-if="(lesson.lesson_type === 'Video' || lesson.lesson_type === 'Mixed') && lesson.video_url" class="mb-6 bg-white rounded-lg shadow-sm overflow-hidden">
                         <div class="bg-black rounded-lg overflow-hidden" style="aspect-ratio: 16/9;">
                             <iframe
                                 v-if="isYouTubeUrl(lesson.video_url)"
@@ -167,8 +167,8 @@
                         </div>
                     </div>
 
-                    <!-- Text Content -->
-                    <div v-if="lesson.content" class="bg-white rounded-lg shadow-sm p-6 mb-6 text-gray-700 leading-relaxed border border-gray-200">
+                    <!-- Text Content (Article Link) -->
+                    <div v-if="lesson.content && (lesson.lesson_type === 'Article' || lesson.lesson_type === 'Mixed')" class="bg-white rounded-lg shadow-sm p-6 mb-6 text-gray-700 leading-relaxed border border-gray-200">
                         <div v-html="lesson.content"></div>
                     </div>
 

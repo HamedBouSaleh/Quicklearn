@@ -169,5 +169,42 @@ class LessonController extends Controller
         ]);
         
         \Log::info("Updated enrollment progress to {$progressPercentage}%");
+
+        // Generate certificate if course is 100% complete
+        if ($progressPercentage == 100) {
+            $this->generateCertificate($courseId, $userId);
+        }
+    }
+
+    private function generateCertificate($courseId, $userId)
+    {
+        // Check if certificate already exists
+        $existingCertificate = \App\Models\Certificate::where('user_id', $userId)
+            ->where('course_id', $courseId)
+            ->first();
+
+        if ($existingCertificate) {
+            \Log::info("Certificate already exists for user {$userId} in course {$courseId}");
+            return;
+        }
+
+        // Get course and instructor details
+        $course = \App\Models\Course::with('creator')->findOrFail($courseId);
+        $instructorName = $course->creator->name ?? 'Instructor';
+
+        // Generate unique verification code
+        $verificationCode = strtoupper(substr(md5($userId . $courseId . now()->timestamp), 0, 12));
+
+        // Create certificate
+        \App\Models\Certificate::create([
+            'user_id' => $userId,
+            'course_id' => $courseId,
+            'certificate_url' => null, // Will be generated when PDF is created
+            'verification_code' => $verificationCode,
+            'generated_at' => now(),
+            'instructor_name' => $instructorName
+        ]);
+
+        \Log::info("Certificate generated for user {$userId} in course {$courseId}");
     }
 }

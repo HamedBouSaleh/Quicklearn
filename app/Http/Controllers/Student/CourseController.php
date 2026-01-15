@@ -14,10 +14,20 @@ class CourseController extends Controller
     {
         // My Courses - only enrolled courses
         $courses = Enrollment::where('user_id', auth()->id())
-            ->with(['course.instructor'])
+            ->with(['course.instructor', 'course.lessons'])
             ->get()
             ->map(function($enrollment) {
                 $course = $enrollment->course;
+                // Calculate progress dynamically
+                $totalLessons = $course->lessons->count();
+                $completedLessons = 0;
+                if ($totalLessons > 0) {
+                    $completedLessons = \App\Models\LessonCompletion::whereIn('lesson_id', 
+                        $course->lessons->pluck('id')
+                    )->where('user_id', auth()->id())->count();
+                }
+                $progress = $totalLessons > 0 ? round(($completedLessons / $totalLessons) * 100) : 0;
+
                 return [
                     'id' => $course->id,
                     'title' => $course->title,
@@ -30,7 +40,7 @@ class CourseController extends Controller
                     'enrollment_count' => $course->enrollment_count,
                     'instructor_name' => $course->instructor->name,
                     'is_enrolled' => true,
-                    'progress' => $enrollment->progress_percentage,
+                    'progress' => $progress,
                     'enrolled_at' => $enrollment->enrolled_at
                 ];
             });
@@ -84,6 +94,18 @@ class CourseController extends Controller
                 ->where('user_id', auth()->id())
                 ->first();
 
+            // Calculate progress dynamically
+            $progress = 0;
+            if ($enrollment) {
+                $totalLessons = \App\Models\Lesson::where('course_id', $course->id)->count();
+                if ($totalLessons > 0) {
+                    $completedLessons = \App\Models\LessonCompletion::whereIn('lesson_id', function($query) use ($course) {
+                        $query->select('id')->from('lessons')->where('course_id', $course->id);
+                    })->where('user_id', auth()->id())->count();
+                    $progress = round(($completedLessons / $totalLessons) * 100);
+                }
+            }
+
             return [
                 'id' => $course->id,
                 'title' => $course->title,
@@ -96,7 +118,7 @@ class CourseController extends Controller
                 'enrollment_count' => $course->enrollment_count,
                 'instructor_name' => $course->instructor->name,
                 'is_enrolled' => !!$enrollment,
-                'progress' => $enrollment ? $enrollment->progress_percentage : 0
+                'progress' => $progress
             ];
         });
 
@@ -118,8 +140,34 @@ class CourseController extends Controller
             ->where('user_id', auth()->id())
             ->first();
 
-        $progress = $enrollment ? $enrollment->progress_percentage : 0;
+        // Calculate progress dynamically
+        $progress = 0;
+        if ($enrollment) {
+            $totalLessons = $course->lessons->count();
+            if ($totalLessons > 0) {
+                $completedLessons = \App\Models\LessonCompletion::whereIn('lesson_id', 
+                    $course->lessons->pluck('id')
+                )->where('user_id', auth()->id())->count();
+                $progress = round(($completedLessons / $totalLessons) * 100);
+            }
+        }
         \Log::info("CourseController.show - Course: {$id}, User: " . auth()->id() . ", Progress: {$progress}");
+
+        // Check if certificate exists for this course
+        $certificate = null;
+        if ($progress == 100) {
+            $certificate = \App\Models\Certificate::where('user_id', auth()->id())
+                ->where('course_id', $id)
+                ->first();
+            
+            if ($certificate) {
+                $certificate = [
+                    'id' => $certificate->id,
+                    'verification_code' => $certificate->verification_code,
+                    'generated_at' => $certificate->generated_at->format('M d, Y')
+                ];
+            }
+        }
 
         return Inertia::render('Student/Courses/Show', [
             'course' => [
@@ -138,6 +186,7 @@ class CourseController extends Controller
                 'is_enrolled' => !!$enrollment,
                 'progress' => $progress
             ],
+            'certificate' => $certificate,
             'lessons' => $course->lessons->map(function($lesson) use ($enrollment) {
                 $isCompleted = false;
                 if ($enrollment) {
