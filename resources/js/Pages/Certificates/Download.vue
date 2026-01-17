@@ -16,7 +16,7 @@
             <div id="certificate" class="relative" style="width: 1200px; height: 763px;">
                 <!-- Background Certificate Template -->
                 <img 
-                    src="/images/certificate-blank.png?v=5" 
+                    src="/images/certificate-blank.png?v=15" 
                     alt="Certificate Template"
                     class="w-full h-full object-contain"
                 />
@@ -24,23 +24,23 @@
                 <!-- Overlay Text - Positioned to match the template -->
                 <div class="absolute inset-0">
                     
-                    <!-- Student Name - Position matches "Samira Hadid" in template -->
-                    <div class="absolute text-center" style="top: 38%; left: 50%; transform: translate(-50%, -50%); width: 90%;">
-                        <p class="text-7xl font-script" style="color: #6B8DC4;">
+                    <!-- Student Name - Centered under "This certificate is presented to" -->
+                    <div class="absolute text-center" style="top: 50%; left: 50%; transform: translate(-50%, -50%); width: 55%;">
+                        <p class="text-6xl font-script" style="color: #6B8DC4;">
                             {{ certificate.student_name }}
                         </p>
                     </div>
 
-                    <!-- Course Title - Position matches course name in template -->
-                    <div class="absolute text-center" style="top: 62%; left: 50%; transform: translate(-50%, -50%); width: 75%;">
-                        <p class="text-2xl font-bold font-serif" style="color: #2C3E50; letter-spacing: 0.05em;">
+                    <!-- Course Title - Already positioned correctly -->
+                    <div class="absolute text-center" style="top: 65%; left: 50%; transform: translate(-50%, -50%); width: 75%;">
+                        <p class="text-2xl font-script" style="color: #2C3E50; letter-spacing: 0.05em;">
                             {{ certificate.course_title }}
                         </p>
                     </div>
 
-                    <!-- Instructor Name - Position matches signature area on left -->
-                    <div class="absolute" style="top: 77%; left: 19%; transform: translateY(-50%);">
-                        <p class="text-xl font-script" style="color: #2C3E50;">
+                    <!-- Instructor Name - Left side, correct position -->
+                    <div class="absolute instructor-name" style="top: 80%; left: 23%; transform: translateY(-50%);">
+                        <p class="text-2xl font-script" style="color: #2C3E50;">
                             {{ certificate.instructor_name }}
                         </p>
                     </div>
@@ -75,21 +75,14 @@ onMounted(() => {
 
 <style scoped>
 @font-face {
-    font-family: 'Pinyon Script';
-    src: url('/fonts/PinyonScript-Regular.ttf') format('truetype');
-    font-weight: normal;
-    font-style: normal;
-}
-
-@font-face {
-    font-family: 'Open Sans';
-    src: url('/fonts/OpenSans-Regular.ttf') format('truetype');
+    font-family: 'Segoe Script';
+    src: url('/fonts/SegoeScript.ttf') format('truetype');
     font-weight: normal;
     font-style: normal;
 }
 
 .font-script {
-    font-family: 'Pinyon Script', cursive;
+    font-family: 'Segoe Script', 'Brush Script MT', 'Apple Chancery', cursive !important;
 }
 
 .font-serif {
@@ -114,6 +107,10 @@ onMounted(() => {
         width: 100%;
         height: 100vh;
         box-shadow: none !important;
+    }
+    
+    .instructor-name {
+        top: 68% !important;
     }
 }
 </style>
