@@ -17,6 +17,7 @@ return new class extends Migration
             $table->text('answer_text');
             $table->boolean('is_correct')->default(false);
             $table->integer('order_position');
+            $table->timestamps();
             
             $table->index('question_id', 'idx_answer_question_id');
         });

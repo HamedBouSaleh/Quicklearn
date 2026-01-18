@@ -14,10 +14,45 @@ class CourseController extends Controller
     {
         // My Courses - only enrolled courses
         $courses = Enrollment::where('user_id', auth()->id())
-            ->with(['course.instructor'])
+            ->with(['course.creator', 'course.lessons', 'course.quizzes'])
             ->get()
             ->map(function($enrollment) {
                 $course = $enrollment->course;
+                // Calculate progress dynamically
+                $totalLessons = $course->lessons->count();
+                $completedLessons = 0;
+                if ($totalLessons > 0) {
+                    $completedLessons = \App\Models\LessonCompletion::whereIn('lesson_id', 
+                        $course->lessons->pluck('id')
+                    )->where('user_id', auth()->id())->count();
+                }
+                $progress = $totalLessons > 0 ? round(($completedLessons / $totalLessons) * 100) : 0;
+
+                // Check if certificate exists
+                $certificate = \App\Models\Certificate::where('user_id', auth()->id())
+                    ->where('course_id', $course->id)
+                    ->first();
+
+                // Calculate total course duration from lessons and quizzes
+                $lessonsDuration = $course->lessons->sum('estimated_duration') ?? 0;
+                $quizzesDuration = $course->quizzes->whereNotNull('time_limit')->sum('time_limit') ?? 0;
+                $totalCourseDuration = $lessonsDuration + $quizzesDuration;
+                
+                // Format duration as "X hours Y min"
+                $hours = floor($totalCourseDuration / 60);
+                $minutes = $totalCourseDuration % 60;
+                $durationText = '';
+                if ($hours > 0) {
+                    $durationText .= $hours . ' ' . ($hours == 1 ? 'hour' : 'hours');
+                }
+                if ($minutes > 0) {
+                    if ($hours > 0) $durationText .= ' ';
+                    $durationText .= $minutes . ' min';
+                }
+                if ($totalCourseDuration == 0) {
+                    $durationText = 'N/A';
+                }
+
                 return [
                     'id' => $course->id,
                     'title' => $course->title,
@@ -25,13 +60,14 @@ class CourseController extends Controller
                     'long_description' => $course->long_description,
                     'category' => $course->category,
                     'difficulty' => $course->difficulty,
-                    'estimated_duration' => $course->estimated_duration,
+                    'estimated_duration' => $durationText,
                     'thumbnail_url' => $course->thumbnail_url,
-                    'enrollment_count' => $course->enrollment_count,
-                    'instructor_name' => $course->instructor->name,
+                    'enrollment_count' => $course->enrollment_count ?? 0,
+                    'instructor_name' => $course->creator->name ?? 'Instructor',
                     'is_enrolled' => true,
-                    'progress' => $enrollment->progress_percentage,
-                    'enrolled_at' => $enrollment->enrolled_at
+                    'progress' => $progress,
+                    'enrolled_at' => $enrollment->created_at,
+                    'certificate_id' => $certificate ? $certificate->id : null
                 ];
             });
 
@@ -84,6 +120,18 @@ class CourseController extends Controller
                 ->where('user_id', auth()->id())
                 ->first();
 
+            // Calculate progress dynamically
+            $progress = 0;
+            if ($enrollment) {
+                $totalLessons = \App\Models\Lesson::where('course_id', $course->id)->count();
+                if ($totalLessons > 0) {
+                    $completedLessons = \App\Models\LessonCompletion::whereIn('lesson_id', function($query) use ($course) {
+                        $query->select('id')->from('lessons')->where('course_id', $course->id);
+                    })->where('user_id', auth()->id())->count();
+                    $progress = round(($completedLessons / $totalLessons) * 100);
+                }
+            }
+
             return [
                 'id' => $course->id,
                 'title' => $course->title,
@@ -96,7 +144,7 @@ class CourseController extends Controller
                 'enrollment_count' => $course->enrollment_count,
                 'instructor_name' => $course->instructor->name,
                 'is_enrolled' => !!$enrollment,
-                'progress' => $enrollment ? $enrollment->progress_percentage : 0
+                'progress' => $progress
             ];
         });
 
@@ -113,13 +161,47 @@ class CourseController extends Controller
 
     public function show($id)
     {
-        $course = Course::with(['lessons', 'instructor', 'quizzes'])->findOrFail($id);
+        $course = Course::with(['lessons', 'creator', 'quizzes'])->findOrFail($id);
         $enrollment = Enrollment::where('course_id', $id)
             ->where('user_id', auth()->id())
             ->first();
 
-        $progress = $enrollment ? $enrollment->progress_percentage : 0;
+        // Get actual enrollment count
+        $enrollmentCount = Enrollment::where('course_id', $id)->count();
+
+        // Calculate total course duration from lessons and quizzes
+        $lessonsDuration = $course->lessons->sum('estimated_duration') ?? 0;
+        $quizzesDuration = $course->quizzes->whereNotNull('time_limit')->sum('time_limit') ?? 0;
+        $totalCourseDuration = $lessonsDuration + $quizzesDuration;
+
+        // Calculate progress dynamically
+        $progress = 0;
+        if ($enrollment) {
+            $totalLessons = $course->lessons->count();
+            if ($totalLessons > 0) {
+                $completedLessons = \App\Models\LessonCompletion::whereIn('lesson_id', 
+                    $course->lessons->pluck('id')
+                )->where('user_id', auth()->id())->count();
+                $progress = round(($completedLessons / $totalLessons) * 100);
+            }
+        }
         \Log::info("CourseController.show - Course: {$id}, User: " . auth()->id() . ", Progress: {$progress}");
+
+        // Check if certificate exists for this course
+        $certificate = null;
+        if ($progress == 100) {
+            $certificate = \App\Models\Certificate::where('user_id', auth()->id())
+                ->where('course_id', $id)
+                ->first();
+            
+            if ($certificate) {
+                $certificate = [
+                    'id' => $certificate->id,
+                    'verification_code' => $certificate->verification_code,
+                    'generated_at' => $certificate->generated_at->format('M d, Y')
+                ];
+            }
+        }
 
         return Inertia::render('Student/Courses/Show', [
             'course' => [
@@ -129,15 +211,16 @@ class CourseController extends Controller
                 'long_description' => $course->long_description,
                 'category' => $course->category,
                 'difficulty' => $course->difficulty,
-                'estimated_duration' => $course->estimated_duration,
+                'estimated_duration' => $totalCourseDuration,
                 'thumbnail_url' => $course->thumbnail_url,
-                'enrollment_count' => $course->enrollment_count,
-                'instructor_name' => $course->instructor->name,
-                'instructor_email' => $course->instructor->email,
+                'enrollment_count' => $enrollmentCount,
+                'instructor_name' => $course->creator->name ?? 'Instructor',
+                'instructor_email' => $course->creator->email ?? '',
                 'instructor_bio' => $course->instructor_bio,
                 'is_enrolled' => !!$enrollment,
                 'progress' => $progress
             ],
+            'certificate' => $certificate,
             'lessons' => $course->lessons->map(function($lesson) use ($enrollment) {
                 $isCompleted = false;
                 if ($enrollment) {
@@ -155,13 +238,45 @@ class CourseController extends Controller
                     'is_completed' => $isCompleted
                 ];
             }),
-            'quizzes' => $course->quizzes->map(function($quiz) {
+            'quizzes' => $course->quizzes->map(function($quiz) use ($enrollment) {
+                $bestAttempt = null;
+                $canRetake = true;
+                
+                if ($enrollment) {
+                    // Get the best attempt for this quiz
+                    $attempts = \App\Models\QuizAttempt::where('quiz_id', $quiz->id)
+                        ->where('user_id', auth()->id())
+                        ->whereNotNull('completed_at')
+                        ->get();
+                    
+                    if ($attempts->count() > 0) {
+                        $best = $attempts->sortByDesc('percentage')->first();
+                        $bestAttempt = [
+                            'id' => $best->id,
+                            'percentage' => $best->percentage,
+                            'passed' => $best->percentage >= $quiz->passing_score
+                        ];
+                        
+                        // Check if can retake
+                        if (!$quiz->allow_retake) {
+                            $canRetake = false;
+                        } elseif ($quiz->max_attempts && $attempts->count() >= $quiz->max_attempts) {
+                            $canRetake = false;
+                        }
+                    }
+                }
+                
                 return [
                     'id' => $quiz->id,
                     'title' => $quiz->title,
                     'description' => $quiz->description,
                     'passing_score' => $quiz->passing_score,
-                    'time_limit' => $quiz->time_limit
+                    'time_limit' => $quiz->time_limit,
+                    'lesson_id' => $quiz->lesson_id,
+                    'best_attempt' => $bestAttempt,
+                    'can_retake' => $canRetake,
+                    'allow_retake' => $quiz->allow_retake,
+                    'max_attempts' => $quiz->max_attempts
                 ];
             })
         ]);

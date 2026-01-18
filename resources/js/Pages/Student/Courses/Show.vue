@@ -1,122 +1,11 @@
 <template>
-    <Head :title="course.title" />
+    <StudentLayout>
+        <Head :title="course.title" />
     
-    <div class="min-h-screen bg-gray-50">
-        <!-- Top Navigation Bar -->
-        <nav class="fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-40 shadow-sm">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex justify-between items-center h-16">
-                    <!-- Logo -->
-                    <a href="/student/dashboard" class="text-2xl font-bold text-primary-500">QuickLearn</a>
-
-                    <!-- Right Side - Profile & Logout -->
-                    <div class="flex items-center space-x-6">
-                        <!-- Notifications -->
-                        <button class="relative text-gray-600 hover:text-primary-500 transition">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
-                            </svg>
-                            <span class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
-                        </button>
-
-                        <!-- Profile Dropdown -->
-                        <div class="relative">
-                            <button @click="toggleProfileDropdown" class="flex items-center space-x-2 hover:bg-gray-100 px-3 py-2 rounded-lg transition">
-                                <div class="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                                    {{ user.name.charAt(0).toUpperCase() }}
-                                </div>
-                                <span class="text-sm font-medium text-gray-700">{{ user.name }}</span>
-                            </button>
-
-                            <!-- Dropdown Menu -->
-                            <div v-if="showProfileDropdown" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-                                <a href="/profile" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                                    My Profile
-                                </a>
-                                <button @click="logout" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                                    Logout
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </nav>
-
-        <!-- Main Content with Sidebar -->
-        <div class="flex pt-16">
-            <!-- Left Sidebar Navigation -->
-            <div class="fixed left-0 top-16 h-screen w-64 bg-white border-r border-gray-200 overflow-y-auto">
-                <nav class="p-4">
-                    <ul class="space-y-2">
-                        <!-- Home -->
-                        <li>
-                            <a href="/student/dashboard" :class="route().current('dashboard') ? 'bg-sky-100 text-primary-500' : 'text-gray-600 hover:bg-gray-50'" class="flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                                </svg>
-                                <span>Home</span>
-                            </a>
-                        </li>
-
-                        <!-- My Courses -->
-                        <li>
-                            <a href="/student/courses" :class="route().current('student.courses.index') ? 'bg-sky-100 text-primary-500' : 'text-gray-600 hover:bg-gray-50'" class="flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                                </svg>
-                                <span>My Courses</span>
-                            </a>
-                        </li>
-
-                        <!-- Browse Courses -->
-                        <li>
-                            <a href="/student/courses/browse" :class="route().current('student.courses.browse') ? 'bg-sky-100 text-primary-500' : 'text-gray-600 hover:bg-gray-50'" class="flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                </svg>
-                                <span>Browse Courses</span>
-                            </a>
-                        </li>
-
-                        <!-- Certificates -->
-                        <li>
-                            <a href="/student/certificates" :class="route().current('student.certificates.index') ? 'bg-sky-100 text-primary-500' : 'text-gray-600 hover:bg-gray-50'" class="flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                <span>Certificates</span>
-                            </a>
-                        </li>
-
-                        <!-- Settings -->
-                        <li class="pt-4 border-t border-gray-200">
-                            <a href="/profile" :class="route().current('profile.*') ? 'bg-sky-100 text-primary-500' : 'text-gray-600 hover:bg-gray-50'" class="flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                                </svg>
-                                <span>Settings</span>
-                            </a>
-                        </li>
-
-                        <!-- Logout -->
-                        <li>
-                            <button @click="logout" class="w-full text-left flex items-center space-x-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                                </svg>
-                                <span>Logout</span>
-                            </button>
-                        </li>
-                    </ul>
-                </nav>
-            </div>
-
-            <!-- Main Content Area -->
-            <div class="flex-1 ml-64 py-8 px-6">
-                <div class="max-w-5xl mx-auto">
-                    <!-- Course Header with gradient -->
-                    <div class="bg-gradient-to-r from-primary-500 to-primary-600 rounded-2xl p-10 mb-10 text-white shadow-2xl">
+        <!-- Main Content Area -->
+        <div class="max-w-5xl mx-auto">
+            <!-- Course Header with gradient -->
+            <div class="bg-gradient-to-r from-primary-500 to-primary-600 rounded-2xl p-10 mb-10 text-white shadow-2xl">
                         <div class="flex items-start justify-between">
                             <div class="flex-1">
                                 <div class="mb-4">
@@ -170,6 +59,17 @@
                                             <span class="text-sm opacity-75">Progress: </span>
                                             <span class="text-xl font-bold">{{ course.progress }}%</span>
                                         </div>
+                                        <!-- Certificate Button -->
+                                        <Link 
+                                            v-if="certificate"
+                                            :href="route('student.certificates.show', certificate.id)"
+                                            class="px-6 py-2 bg-amber-500 text-white font-semibold rounded-lg hover:bg-amber-600 transition flex items-center space-x-2"
+                                        >
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                                            </svg>
+                                            <span>View Certificate</span>
+                                        </Link>
                                     </div>
                                 </div>
                             </div>
@@ -215,67 +115,139 @@
                                     <div
                                         v-for="(lesson, index) in lessons"
                                         :key="lesson.id"
-                                        :class="[
-                                            'flex items-center p-5 rounded-xl border-2 transition-all duration-200',
-                                            course.is_enrolled 
-                                                ? 'cursor-pointer hover:border-primary-400 hover:bg-sky-50 hover:-translate-y-0.5 hover:shadow-md'
-                                                : 'cursor-not-allowed opacity-75',
-                                            lesson.is_completed ? 'border-green-300 bg-green-50' : 'border-gray-200'
-                                        ]"
-                                        @click="course.is_enrolled && viewLesson(lesson.id)"
+                                        class="border-2 border-gray-200 rounded-xl overflow-hidden"
                                     >
-                                        <!-- Lesson Number -->
-                                        <div class="flex-shrink-0 w-10 h-10 rounded-full bg-primary-100 text-primary-600 font-bold flex items-center justify-center mr-4">
-                                            {{ index + 1 }}
-                                        </div>
+                                        <!-- Lesson Row -->
+                                        <div
+                                            :class="[
+                                                'flex items-center p-5 transition-all duration-200',
+                                                course.is_enrolled 
+                                                    ? 'cursor-pointer hover:border-primary-400 hover:bg-sky-50'
+                                                    : 'cursor-not-allowed opacity-75',
+                                                lesson.is_completed ? 'bg-green-50' : 'bg-white'
+                                            ]"
+                                            @click="viewLesson(lesson.id)"
+                                        >
+                                            <!-- Lesson Number -->
+                                            <div class="flex-shrink-0 w-10 h-10 rounded-full bg-primary-100 text-primary-600 font-bold flex items-center justify-center mr-4">
+                                                {{ index + 1 }}
+                                            </div>
 
-                                        <!-- Lesson Info -->
-                                        <div class="flex-1">
-                                            <h3 class="font-semibold text-gray-900 mb-1">{{ lesson.title }}</h3>
-                                            <div class="flex items-center space-x-4 text-sm text-gray-600">
-                                                <span class="flex items-center">
-                                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                                                    </svg>
-                                                    {{ lesson.lesson_type }}
-                                                </span>
-                                                <span class="flex items-center">
-                                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                    </svg>
-                                                    {{ lesson.estimated_duration || 0 }} min
-                                                </span>
+                                            <!-- Lesson Info -->
+                                            <div class="flex-1">
+                                                <h3 class="font-semibold text-gray-900 mb-1">{{ lesson.title }}</h3>
+                                                <div class="flex items-center space-x-4 text-sm text-gray-600">
+                                                    <span class="flex items-center">
+                                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                                        </svg>
+                                                        {{ lesson.lesson_type }}
+                                                    </span>
+                                                    <span class="flex items-center">
+                                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                        </svg>
+                                                        {{ lesson.estimated_duration || 0 }} min
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <!-- Completion Status -->
+                                            <div class="flex-shrink-0 ml-4">
+                                                <svg
+                                                    v-if="lesson.is_completed"
+                                                    class="w-6 h-6 text-green-500"
+                                                    fill="currentColor"
+                                                    viewBox="0 0 20 20"
+                                                >
+                                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                                </svg>
+                                                <svg
+                                                    v-else-if="!course.is_enrolled"
+                                                    class="w-6 h-6 text-gray-400"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    viewBox="0 0 24 24"
+                                                >
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                                </svg>
+                                                <svg
+                                                    v-else
+                                                    class="w-6 h-6 text-gray-400"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    viewBox="0 0 24 24"
+                                                >
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                                </svg>
                                             </div>
                                         </div>
 
-                                        <!-- Completion Status -->
-                                        <div class="flex-shrink-0 ml-4">
-                                            <svg
-                                                v-if="lesson.is_completed"
-                                                class="w-6 h-6 text-green-500"
-                                                fill="currentColor"
-                                                viewBox="0 0 20 20"
-                                            >
-                                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                                            </svg>
-                                            <svg
-                                                v-else-if="!course.is_enrolled"
-                                                class="w-6 h-6 text-gray-400"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                viewBox="0 0 24 24"
-                                            >
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                                            </svg>
-                                            <svg
-                                                v-else
-                                                class="w-6 h-6 text-gray-400"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                viewBox="0 0 24 24"
-                                            >
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                                            </svg>
+                                        <!-- Quizzes for this lesson -->
+                                        <div v-if="getQuizzesForLesson(lesson.id).length > 0" class="border-t border-gray-200 bg-gray-50 px-5 py-3">
+                                            <div class="space-y-2">
+                                                <div
+                                                    v-for="quiz in getQuizzesForLesson(lesson.id)"
+                                                    :key="quiz.id"
+                                                    class="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg hover:border-sky-300 transition"
+                                                >
+                                                    <div class="flex items-center flex-1">
+                                                        <svg class="w-5 h-5 text-amber-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                                                        </svg>
+                                                        <div class="flex-1">
+                                                            <h4 class="font-semibold text-gray-900 text-sm">{{ quiz.title }}</h4>
+                                                            <p class="text-xs text-gray-600">
+                                                                Passing score: {{ quiz.passing_score }}% 
+                                                                <span v-if="quiz.time_limit">• {{ quiz.time_limit }} min</span>
+                                                            </p>
+                                                            <!-- Show best attempt if exists -->
+                                                            <div v-if="quiz.best_attempt" class="mt-1">
+                                                                <span class="text-xs font-semibold" :class="quiz.best_attempt.passed ? 'text-green-600' : 'text-red-600'">
+                                                                    Your Best: {{ Math.round(quiz.best_attempt.percentage) }}%
+                                                                    <span v-if="quiz.best_attempt.passed">✓ Passed</span>
+                                                                    <span v-else>✗ Failed</span>
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <!-- Show appropriate button based on attempt status -->
+                                                    <div v-if="!course.is_enrolled" class="px-4 py-2 bg-gray-200 text-gray-600 rounded-lg text-sm">
+                                                        Locked
+                                                    </div>
+                                                    <div v-else-if="quiz.best_attempt && !quiz.can_retake" class="text-center">
+                                                        <Link
+                                                            :href="route('student.quizzes.results', quiz.best_attempt.id)"
+                                                            class="px-4 py-2 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 transition text-sm inline-block"
+                                                        >
+                                                            View Results
+                                                        </Link>
+                                                        <p class="text-xs text-gray-600 mt-1">No retakes allowed</p>
+                                                    </div>
+                                                    <div v-else-if="quiz.best_attempt && quiz.can_retake" class="text-center">
+                                                        <button
+                                                            @click.stop="startQuiz(quiz.id)"
+                                                            class="px-4 py-2 bg-amber-500 text-white font-semibold rounded-lg hover:bg-amber-600 transition text-sm mb-1"
+                                                        >
+                                                            Retake Quiz
+                                                        </button>
+                                                        <Link
+                                                            :href="route('student.quizzes.results', quiz.best_attempt.id)"
+                                                            class="text-xs text-blue-600 hover:text-blue-700 block"
+                                                        >
+                                                            View Best Result
+                                                        </Link>
+                                                    </div>
+                                                    <button
+                                                        v-else
+                                                        @click.stop="startQuiz(quiz.id)"
+                                                        class="px-4 py-2 bg-amber-500 text-white font-semibold rounded-lg hover:bg-amber-600 transition text-sm"
+                                                    >
+                                                        Start Quiz
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -293,37 +265,6 @@
                                     >
                                         Enroll Now
                                     </button>
-                                </div>
-                            </div>
-
-                            <!-- Quizzes -->
-                            <div v-if="quizzes.length > 0" class="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
-                                <h2 class="text-2xl font-bold text-gray-900 mb-6">Quizzes</h2>
-
-                                <div class="space-y-3">
-                                    <div
-                                        v-for="quiz in quizzes"
-                                        :key="quiz.id"
-                                        class="flex items-center justify-between p-4 border-2 border-gray-200 rounded-lg hover:border-primary-300 transition"
-                                    >
-                                        <div class="flex-1">
-                                            <h3 class="font-semibold text-gray-900 mb-1">{{ quiz.title }}</h3>
-                                            <p class="text-sm text-gray-600">
-                                                Passing score: {{ quiz.passing_score }}% 
-                                                <span v-if="quiz.time_limit">• {{ quiz.time_limit }} minutes</span>
-                                            </p>
-                                        </div>
-                                        <button
-                                            v-if="course.is_enrolled"
-                                            @click="startQuiz(quiz.id)"
-                                            class="px-4 py-2 bg-primary-600 text-white font-semibold rounded-lg hover:bg-primary-700 transition"
-                                        >
-                                            Start Quiz
-                                        </button>
-                                        <div v-else class="px-4 py-2 bg-gray-200 text-gray-600 rounded-lg">
-                                            Locked
-                                        </div>
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -386,8 +327,6 @@
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
 
         <!-- Instructor Contact Modal -->
         <Teleport to="body">
@@ -442,18 +381,15 @@
                 </div>
             </div>
         </Teleport>
-    </div>
+    </StudentLayout>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue';
-import { Head, router, usePage } from '@inertiajs/vue3';
+import { Head, router, usePage, Link } from '@inertiajs/vue3';
+import StudentLayout from '@/Layouts/StudentLayout.vue';
 
 const showInstructorModal = ref(false);
-const showProfileDropdown = ref(false);
-const page = usePage();
-
-const user = computed(() => page.props.auth.user || {});
 
 const props = defineProps({
     course: {
@@ -467,6 +403,10 @@ const props = defineProps({
     quizzes: {
         type: Array,
         default: () => []
+    },
+    certificate: {
+        type: Object,
+        default: null
     }
 });
 
@@ -474,6 +414,13 @@ const props = defineProps({
 console.log('Show.vue mounted - course prop:', props.course);
 console.log('Progress value:', props.course.progress);
 console.log('Type of progress:', typeof props.course.progress);
+
+// Get quizzes for a specific lesson
+const getQuizzesForLesson = (lessonId) => {
+    const quizzes = props.quizzes.filter(quiz => quiz.lesson_id === lessonId);
+    console.log('Quizzes for lesson', lessonId, ':', quizzes);
+    return quizzes;
+};
 
 const enrollCourse = () => {
     router.post(route('student.courses.enroll', props.course.id));
@@ -484,14 +431,6 @@ const viewLesson = (lessonId) => {
 };
 
 const startQuiz = (quizId) => {
-    router.visit(route('student.quizzes.show', quizId));
-};
-
-const toggleProfileDropdown = () => {
-    showProfileDropdown.value = !showProfileDropdown.value;
-};
-
-const logout = () => {
-    router.post(route('logout'));
+    router.post(route('student.quizzes.start', quizId));
 };
 </script>

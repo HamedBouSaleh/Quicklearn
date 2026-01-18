@@ -26,6 +26,14 @@ const deleteLesson = (lessonId) => {
 const editCourse = () => {
     router.visit(route('instructor.courses.edit', props.course.id));
 };
+
+const createQuiz = (lessonId) => {
+    router.visit(route('instructor.quizzes.create', lessonId));
+};
+
+const viewQuizzes = (lessonId) => {
+    router.visit(route('instructor.quizzes.index', lessonId));
+};
 </script>
 
 <template>
@@ -152,6 +160,19 @@ const editCourse = () => {
                             </div>
                             
                             <div class="flex items-center space-x-2">
+                                <button
+                                    v-if="lesson.quizzes_count > 0"
+                                    @click="viewQuizzes(lesson.id)"
+                                    class="rounded-lg bg-purple-50 px-4 py-2 text-sm font-medium text-purple-600 hover:bg-purple-100 transition"
+                                >
+                                    {{ lesson.quizzes_count }} Quiz{{ lesson.quizzes_count !== 1 ? 'zes' : '' }}
+                                </button>
+                                <button
+                                    @click="createQuiz(lesson.id)"
+                                    class="rounded-lg bg-green-50 px-4 py-2 text-sm font-medium text-green-600 hover:bg-green-100 transition"
+                                >
+                                    + Quiz
+                                </button>
                                 <button
                                     @click="editLesson(lesson.id)"
                                     class="rounded-lg bg-blue-50 px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-100 transition"

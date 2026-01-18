@@ -231,6 +231,7 @@
                     Clear Filters
                 </button>
             </div>
+            </main>
         </div>
     </div>
 </template>

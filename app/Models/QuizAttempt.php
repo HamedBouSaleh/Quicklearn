@@ -22,7 +22,8 @@ class QuizAttempt extends Model
         'time_spent_seconds',
         'attempt_date',
         'completed_at',
-        'attempt_number'
+        'attempt_number',
+        'client_submitted_at'
     ];
 
     protected $casts = [

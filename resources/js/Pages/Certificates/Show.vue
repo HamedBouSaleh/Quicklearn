@@ -2,7 +2,7 @@
     <StudentLayout>
         <Head title="Certificate" />
 
-        <div class="max-w-5xl mx-auto">
+        <div class="max-w-6xl mx-auto py-8 px-4">
             <!-- Header -->
             <div class="mb-8 text-center">
                 <h1 class="text-4xl font-bold text-gray-900 mb-2">Your Certificate</h1>
@@ -10,98 +10,45 @@
             </div>
 
             <!-- Certificate Preview -->
-            <Card class="mb-8 overflow-hidden">
-                <div class="bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 p-12 border-8 border-double border-amber-600">
-                    <div class="bg-white rounded-lg shadow-2xl p-12 relative overflow-hidden">
-                        <!-- Decorative Elements -->
-                        <div class="absolute top-0 left-0 w-32 h-32 border-t-4 border-l-4 border-amber-400"></div>
-                        <div class="absolute top-0 right-0 w-32 h-32 border-t-4 border-r-4 border-amber-400"></div>
-                        <div class="absolute bottom-0 left-0 w-32 h-32 border-b-4 border-l-4 border-amber-400"></div>
-                        <div class="absolute bottom-0 right-0 w-32 h-32 border-b-4 border-r-4 border-amber-400"></div>
+            <div class="mb-8">
+                <div id="certificate" class="relative w-full" style="aspect-ratio: 1200/763;">
+                    <!-- Background Certificate Template -->
+                    <img 
+                        src="/images/certificate-blank.png?v=15" 
+                        alt="Certificate Template"
+                        class="w-full h-full object-contain"
+                        @error="imageError"
+                    />
+                    
+                    <!-- Overlay Text - Positioned to match the template -->
+                    <div class="absolute inset-0">
+                        
+                        <!-- Student Name - Centered under "This certificate is presented to" -->
+                        <div class="absolute text-center" style="top: 50%; left: 50%; transform: translate(-50%, -50%); width: 55%;">
+                            <p class="text-4xl md:text-5xl lg:text-6xl font-script" style="color: #6B8DC4;">
+                                {{ certificate.student_name }}
+                            </p>
+                        </div>
 
-                        <div class="relative z-10">
-                            <!-- Certificate Badge -->
-                            <div class="flex justify-center mb-6">
-                                <div class="w-20 h-20 bg-gradient-to-br from-amber-400 to-yellow-600 rounded-full flex items-center justify-center shadow-lg">
-                                    <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-                                    </svg>
-                                </div>
-                            </div>
+                        <!-- Course Title - Already positioned correctly -->
+                        <div class="absolute text-center" style="top: 65%; left: 50%; transform: translate(-50%, -50%); width: 75%;">
+                            <p class="text-xl md:text-2xl font-script" style="color: #2C3E50; letter-spacing: 0.05em;">
+                                {{ certificate.course_title }}
+                            </p>
+                        </div>
 
-                            <!-- Title -->
-                            <div class="text-center mb-8">
-                                <h2 class="text-5xl font-serif font-bold text-gray-800 mb-2">Certificate of Completion</h2>
-                                <div class="w-24 h-1 bg-amber-500 mx-auto"></div>
-                            </div>
-
-                            <!-- Text Content -->
-                            <div class="text-center mb-8 space-y-4">
-                                <p class="text-xl text-gray-700">This is to certify that</p>
-                                <p class="text-4xl font-bold text-gray-900 font-serif">{{ certificate.student_name }}</p>
-                                <p class="text-xl text-gray-700">has successfully completed the course</p>
-                                <p class="text-3xl font-bold text-blue-600 font-serif">{{ certificate.course_title }}</p>
-                            </div>
-
-                            <!-- Course Details -->
-                            <div class="grid grid-cols-3 gap-8 mb-8 text-center">
-                                <div>
-                                    <p class="text-sm text-gray-600 mb-1">Date Issued</p>
-                                    <p class="font-semibold text-gray-900">{{ certificate.issued_date }}</p>
-                                </div>
-                                <div>
-                                    <p class="text-sm text-gray-600 mb-1">Certificate ID</p>
-                                    <p class="font-semibold text-gray-900">{{ certificate.certificate_id }}</p>
-                                </div>
-                                <div>
-                                    <p class="text-sm text-gray-600 mb-1">Final Score</p>
-                                    <p class="font-semibold text-gray-900">{{ certificate.final_score }}%</p>
-                                </div>
-                            </div>
-
-                            <!-- Signature Section -->
-                            <div class="grid grid-cols-2 gap-12 mt-12 pt-8 border-t border-gray-300">
-                                <div class="text-center">
-                                    <div class="mb-2">
-                                        <div class="h-12 flex items-end justify-center">
-                                            <span class="text-2xl font-signature text-gray-700">{{ certificate.instructor_name || 'Instructor' }}</span>
-                                        </div>
-                                    </div>
-                                    <div class="border-t-2 border-gray-400 pt-2">
-                                        <p class="text-sm font-semibold text-gray-700">Instructor Signature</p>
-                                    </div>
-                                </div>
-                                <div class="text-center">
-                                    <div class="mb-2">
-                                        <div class="h-12 flex items-center justify-center">
-                                            <img 
-                                                src="/images/logo.png" 
-                                                alt="Learn Logo" 
-                                                class="h-10"
-                                                onerror="this.style.display='none'"
-                                            />
-                                            <span class="text-2xl font-bold text-blue-600">Learn</span>
-                                        </div>
-                                    </div>
-                                    <div class="border-t-2 border-gray-400 pt-2">
-                                        <p class="text-sm font-semibold text-gray-700">Official Seal</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Verification Link -->
-                            <div class="mt-8 text-center">
-                                <p class="text-xs text-gray-500">
-                                    Verify this certificate at: {{ verificationUrl }}
-                                </p>
-                            </div>
+                        <!-- Instructor Name - Left side, correct position -->
+                        <div class="absolute" style="top: 80%; left: 23%; transform: translateY(-50%);">
+                            <p class="text-lg md:text-xl lg:text-2xl font-script" style="color: #2C3E50;">
+                                {{ certificate.instructor_name }}
+                            </p>
                         </div>
                     </div>
                 </div>
-            </Card>
+            </div>
 
             <!-- Actions -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
                 <button 
                     @click="downloadPDF"
                     :disabled="downloading"
@@ -124,7 +71,17 @@
                 </button>
 
                 <Link 
-                    :href="route('certificates.index')"
+                    :href="route('dashboard')"
+                    class="flex items-center justify-center px-6 py-4 bg-cyan-500 text-white font-semibold rounded-lg hover:bg-cyan-600 transition"
+                >
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                    Dashboard
+                </Link>
+
+                <Link 
+                    :href="route('student.certificates.index')"
                     class="flex items-center justify-center px-6 py-4 border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:border-blue-500 hover:text-blue-600 transition"
                 >
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -140,7 +97,7 @@
                     <h2 class="text-xl font-bold text-gray-900">Course Achievement Summary</h2>
                 </template>
 
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div class="text-center p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg">
                         <div class="text-3xl font-bold text-blue-600 mb-2">{{ certificate.lessons_completed }}</div>
                         <div class="text-sm text-gray-600">Lessons Completed</div>
@@ -148,10 +105,6 @@
                     <div class="text-center p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg">
                         <div class="text-3xl font-bold text-green-600 mb-2">{{ certificate.quizzes_passed }}</div>
                         <div class="text-sm text-gray-600">Quizzes Passed</div>
-                    </div>
-                    <div class="text-center p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg">
-                        <div class="text-3xl font-bold text-purple-600 mb-2">{{ certificate.hours_spent }}</div>
-                        <div class="text-sm text-gray-600">Hours Spent</div>
                     </div>
                     <div class="text-center p-4 bg-gradient-to-br from-amber-50 to-yellow-50 rounded-lg">
                         <div class="text-3xl font-bold text-amber-600 mb-2">{{ certificate.final_score }}%</div>
@@ -223,7 +176,7 @@ const verificationUrl = computed(() => {
 
 const downloadPDF = () => {
     downloading.value = true;
-    router.get(route('certificates.download', props.certificate.id), {}, {
+    router.get(route('student.certificates.download', props.certificate.id), {}, {
         onFinish: () => {
             downloading.value = false;
         }
@@ -245,12 +198,30 @@ const copyLink = async () => {
         console.error('Failed to copy:', err);
     }
 };
+
+const imageError = (e) => {
+    console.error('Certificate image failed to load:', e);
+    alert('Certificate template image not found. Please ensure certificate-template.jpg is in public/images/');
+};
 </script>
 
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap');
+<style scoped>
+@font-face {
+    font-family: 'Segoe Script';
+    src: url('/fonts/SegoeScript.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
 
-.font-signature {
-    font-family: 'Great Vibes', cursive;
+.font-script {
+    font-family: 'Segoe Script', 'Brush Script MT', 'Apple Chancery', cursive !important;
+}
+
+.font-serif {
+    font-family: 'Times New Roman', serif;
+}
+
+.font-sans {
+    font-family: 'Open Sans', sans-serif;
 }
 </style>

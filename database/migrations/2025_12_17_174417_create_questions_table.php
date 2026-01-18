@@ -18,7 +18,7 @@ return new class extends Migration
             $table->enum('question_type', ['MCQ', 'MSQ', 'TrueFalse', 'ShortAnswer']);
             $table->integer('order_position');
             $table->integer('points')->default(1);
-            $table->timestamp('created_at')->useCurrent();
+            $table->timestamps();
             
             $table->index('quiz_id', 'idx_question_quiz_id');
             $table->index('order_position', 'idx_question_order_position');

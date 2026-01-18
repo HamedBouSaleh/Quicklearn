@@ -13,22 +13,45 @@ class QuizController extends Controller
 {
     public function show($id)
     {
-        $quiz = Quiz::with(['questions.answers', 'lesson.course'])->findOrFail($id);
+        $quiz = Quiz::with(['questions.answers', 'course', 'lesson.course'])->findOrFail($id);
+        
+        // Get the course (either directly or through lesson)
+        $course = $quiz->course ?? $quiz->lesson->course;
         
         // Check if student is enrolled
-        $isEnrolled = $quiz->lesson->course->enrollments()
+        $isEnrolled = $course->enrollments()
             ->where('user_id', auth()->id())
             ->exists();
 
         if (!$isEnrolled) {
-            return redirect()->route('student.courses.show', $quiz->lesson->course_id)
+            return redirect()->route('student.courses.show', $course->id)
                 ->with('error', 'You must be enrolled in this course to take quizzes.');
         }
 
-        $previousAttempt = QuizAttempt::where('quiz_id', $id)
+        // Get all previous attempts
+        $previousAttempts = QuizAttempt::where('quiz_id', $id)
             ->where('user_id', auth()->id())
-            ->latest()
-            ->first();
+            ->whereNotNull('completed_at')
+            ->orderBy('id', 'desc')
+            ->get();
+
+        // Get the highest scoring attempt
+        $bestAttempt = $previousAttempts->sortByDesc('percentage')->first();
+        $attemptCount = $previousAttempts->count();
+
+        // Check if retakes are allowed
+        $canRetake = true;
+        $retakeMessage = null;
+
+        if ($bestAttempt) {
+            if (!$quiz->allow_retake) {
+                $canRetake = false;
+                $retakeMessage = 'Retakes are not allowed for this quiz.';
+            } elseif ($quiz->max_attempts && $attemptCount >= $quiz->max_attempts) {
+                $canRetake = false;
+                $retakeMessage = "You have reached the maximum number of attempts ({$quiz->max_attempts}).";
+            }
+        }
 
         return Inertia::render('Student/Quizzes/Show', [
             'quiz' => [
@@ -37,15 +60,21 @@ class QuizController extends Controller
                 'description' => $quiz->description,
                 'time_limit' => $quiz->time_limit,
                 'passing_score' => $quiz->passing_score,
-                'course_title' => $quiz->lesson->course->title,
-                'lesson_title' => $quiz->lesson->title,
+                'allow_retake' => $quiz->allow_retake,
+                'max_attempts' => $quiz->max_attempts,
+                'course_id' => $course->id,
                 'questions_count' => $quiz->questions->count()
             ],
-            'previousAttempt' => $previousAttempt ? [
-                'score' => $previousAttempt->score,
-                'passed' => $previousAttempt->passed,
-                'submitted_at' => $previousAttempt->submitted_at->format('M d, Y H:i')
-            ] : null
+            'previousAttempt' => $bestAttempt ? [
+                'id' => $bestAttempt->id,
+                'score' => $bestAttempt->score,
+                'percentage' => $bestAttempt->percentage,
+                'passed' => $bestAttempt->percentage >= $quiz->passing_score,
+                'submitted_at' => $bestAttempt->client_submitted_at ?? ($bestAttempt->completed_at ? $bestAttempt->completed_at->format('M d, Y') : null)
+            ] : null,
+            'attemptCount' => $attemptCount,
+            'canRetake' => $canRetake,
+            'retakeMessage' => $retakeMessage
         ]);
     }
 
@@ -53,18 +82,52 @@ class QuizController extends Controller
     {
         $quiz = Quiz::with('questions.answers')->findOrFail($id);
 
+        // Check if quiz has questions
+        if ($quiz->questions->count() === 0) {
+            return redirect()->route('student.quizzes.show', $id)
+                ->with('error', 'This quiz has no questions yet. Please contact your instructor.');
+        }
+
+        // Get attempt count
+        $attemptCount = QuizAttempt::where('quiz_id', $id)
+            ->where('user_id', auth()->id())
+            ->whereNotNull('completed_at')
+            ->count();
+
+        // Check if retakes are allowed
+        if ($attemptCount > 0) {
+            if (!$quiz->allow_retake) {
+                return redirect()->route('student.quizzes.show', $id)
+                    ->with('error', 'Retakes are not allowed for this quiz.');
+            }
+            
+            if ($quiz->max_attempts && $attemptCount >= $quiz->max_attempts) {
+                return redirect()->route('student.quizzes.show', $id)
+                    ->with('error', "You have reached the maximum number of attempts ({$quiz->max_attempts}).");
+            }
+        }
+
+        // Calculate total points
+        $totalPoints = $quiz->questions->sum('points');
+        
+        // Get attempt number
+        $attemptNumber = QuizAttempt::where('quiz_id', $id)
+            ->where('user_id', auth()->id())
+            ->count() + 1;
+
         // Create new attempt
         $attempt = QuizAttempt::create([
             'quiz_id' => $id,
             'user_id' => auth()->id(),
-            'started_at' => now()
+            'total_points' => $totalPoints,
+            'attempt_number' => $attemptNumber
         ]);
 
         return Inertia::render('Student/Quizzes/Take', [
             'attempt' => [
                 'id' => $attempt->id,
                 'quiz_id' => $quiz->id,
-                'started_at' => $attempt->started_at->toIso8601String()
+                'started_at' => $attempt->attempt_date
             ],
             'quiz' => [
                 'id' => $quiz->id,
@@ -96,7 +159,7 @@ class QuizController extends Controller
             ->where('user_id', auth()->id())
             ->findOrFail($attemptId);
 
-        if ($attempt->submitted_at) {
+        if ($attempt->completed_at) {
             return back()->with('error', 'This quiz has already been submitted.');
         }
 
@@ -104,7 +167,9 @@ class QuizController extends Controller
             'answers' => 'required|array',
             'answers.*.question_id' => 'required|exists:questions,id',
             'answers.*.answer_id' => 'nullable|exists:answers,id',
-            'answers.*.text_answer' => 'nullable|string'
+            'answers.*.text_answer' => 'nullable|string',
+            'time_spent_seconds' => 'required|integer|min:0',
+            'submitted_at_formatted' => 'required|string'
         ]);
 
         $totalScore = 0;
@@ -115,10 +180,10 @@ class QuizController extends Controller
             $maxScore += $question->points;
 
             $studentAnswer = StudentAnswer::create([
-                'attempt_id' => $attempt->id,
+                'quiz_attempt_id' => $attempt->id,
                 'question_id' => $answerData['question_id'],
                 'answer_id' => $answerData['answer_id'] ?? null,
-                'text_answer' => $answerData['text_answer'] ?? null
+                'short_answer_text' => $answerData['text_answer'] ?? null
             ]);
 
             // Auto-grade multiple choice and true/false
@@ -131,14 +196,18 @@ class QuizController extends Controller
         }
 
         $scorePercentage = $maxScore > 0 ? ($totalScore / $maxScore) * 100 : 0;
-        $passed = $scorePercentage >= $attempt->quiz->passing_score;
 
+        // Store the client's formatted time string in a JSON field or use it directly
         $attempt->update([
-            'submitted_at' => now(),
-            'score' => $scorePercentage,
-            'passed' => $passed,
-            'time_taken' => now()->diffInMinutes($attempt->started_at)
+            'completed_at' => now(),
+            'score' => $totalScore,
+            'percentage' => $scorePercentage,
+            'time_spent_seconds' => $validated['time_spent_seconds']
         ]);
+        
+        // Store client formatted time separately
+        $attempt->client_submitted_at = $validated['submitted_at_formatted'];
+        $attempt->save();
 
         return redirect()->route('student.quizzes.results', $attempt->id)
             ->with('success', 'Quiz submitted successfully!');
@@ -150,18 +219,43 @@ class QuizController extends Controller
             ->where('user_id', auth()->id())
             ->findOrFail($attemptId);
 
+        $passed = $attempt->percentage >= $attempt->quiz->passing_score;
+
+        // Calculate time taken in minutes
+        $timeTaken = null;
+        if ($attempt->time_spent_seconds > 0) {
+            $timeTaken = round($attempt->time_spent_seconds / 60);
+        }
+
+        // Check if student can still retake (to hide corrections)
+        $attemptCount = QuizAttempt::where('quiz_id', $attempt->quiz_id)
+            ->where('user_id', auth()->id())
+            ->whereNotNull('completed_at')
+            ->count();
+        
+        $canRetake = true;
+        if (!$attempt->quiz->allow_retake) {
+            $canRetake = false;
+        } elseif ($attempt->quiz->max_attempts && $attemptCount >= $attempt->quiz->max_attempts) {
+            $canRetake = false;
+        }
+
         return Inertia::render('Student/Quizzes/Results', [
             'attempt' => [
                 'id' => $attempt->id,
+                'quiz_id' => $attempt->quiz_id,
                 'score' => $attempt->score,
-                'passed' => $attempt->passed,
-                'submitted_at' => $attempt->submitted_at->format('M d, Y H:i'),
-                'time_taken' => $attempt->time_taken
+                'percentage' => $attempt->percentage,
+                'passed' => $passed,
+                'submitted_at' => $attempt->client_submitted_at ?? ($attempt->completed_at ? $attempt->completed_at->format('M d, Y \a\t g:i A') : null),
+                'time_taken' => $timeTaken
             ],
             'quiz' => [
                 'title' => $attempt->quiz->title,
-                'passing_score' => $attempt->quiz->passing_score
+                'passing_score' => $attempt->quiz->passing_score,
+                'total_points' => $attempt->total_points
             ],
+            'canRetake' => $canRetake,
             'questions' => $attempt->quiz->questions->map(function($question) use ($attempt) {
                 $studentAnswer = $attempt->studentAnswers->where('question_id', $question->id)->first();
                 $selectedAnswer = $studentAnswer && $studentAnswer->answer_id 
@@ -173,7 +267,7 @@ class QuizController extends Controller
                     'question_text' => $question->question_text,
                     'question_type' => $question->question_type,
                     'points' => $question->points,
-                    'your_answer' => $selectedAnswer ? $selectedAnswer->answer_text : ($studentAnswer->text_answer ?? 'Not answered'),
+                    'your_answer' => $selectedAnswer ? $selectedAnswer->answer_text : ($studentAnswer->short_answer_text ?? 'Not answered'),
                     'correct_answer' => $correctAnswer ? $correctAnswer->answer_text : null,
                     'is_correct' => $selectedAnswer && $selectedAnswer->is_correct
                 ];

@@ -81,9 +81,14 @@ class CourseController extends Controller
 
     public function show($id)
     {
-        $course = Course::with(['lessons.quizzes', 'lessons.attachments', 'enrollments.user'])
+        $course = Course::with(['lessons.quizzes', 'lessons.attachments', 'enrollments.user', 'quizzes'])
             ->where('created_by', auth()->id())
             ->findOrFail($id);
+
+        // Calculate total duration from lessons and quizzes
+        $lessonsDuration = $course->lessons->sum('estimated_duration') ?? 0;
+        $quizzesDuration = $course->quizzes->whereNotNull('time_limit')->sum('time_limit') ?? 0;
+        $totalDuration = $lessonsDuration + $quizzesDuration;
 
         return Inertia::render('Instructor/Courses/Show', [
             'course' => [
@@ -94,7 +99,7 @@ class CourseController extends Controller
                 'long_description' => $course->long_description,
                 'category' => $course->category,
                 'difficulty' => $course->difficulty,
-                'estimated_duration' => $course->estimated_duration,
+                'estimated_duration' => $totalDuration,
                 'thumbnail_url' => $course->thumbnail_url,
                 'is_published' => $course->is_published,
                 'students_count' => $course->enrollments->count(),
